@@ -4,7 +4,7 @@ The public learning and reference site for **Decay**, Sindri Engine's Rust-inspi
 
 This repository owns the **knowledge experience**: tutorials, cookbook recipes, concepts, diagnostics explanations, search, and the website itself.
 
-It does **not** own the Decay language implementation or Sindri host API. Those remain authoritative in [`vardirhq/sindri2`](https://github.com/vardirhq/sindri2):
+It does **not** own the Decay language implementation or Sindri host API. Those remain authoritative in [`vardirhq/sindri-engine`](https://github.com/vardirhq/sindri-engine):
 
 - `decay/LANGUAGE.md` — implemented Decay language behaviour
 - `docs/scripting.md` — Sindri host contract
@@ -66,7 +66,7 @@ The site should serve three jobs without muddling them together:
 
 ## Source-of-truth boundary
 
-`vardirhq/sindri2` remains authoritative for:
+`vardirhq/sindri-engine` remains authoritative for:
 
 - grammar and semantics;
 - types and built-ins;
