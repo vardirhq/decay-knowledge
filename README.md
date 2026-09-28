@@ -13,7 +13,9 @@ discovers every global, function, type, namespace-like host value, member, and
 authoritative `decay/LANGUAGE.md` is rendered at `/reference/language/` without
 trying to infer a second symbol model from its prose. The build also
 builds `search-index.json`, `sitemap.xml`, canonical metadata, a 404 page, and
-`build-metadata.json`. Every page and metadata artifact records the exact
+`build-metadata.json`. The page shell, home, reference landing and 404 are
+rendered by the build too (there is no hand-written root `index.html`); styling
+lives in `assets/site.css`, with dark and light themes. Every page and metadata artifact records the exact
 engine Git SHA. `_site` is intentionally uncommitted: the two source revisions
 reproduce it.
 
