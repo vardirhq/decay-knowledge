@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Learn Decay, Sindri Engine's Rust-inspired, statically typed gameplay language.">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="canonical" href="https://decay.vardir.no/">
+  <link rel="stylesheet" href="./assets/site.css">
+  <title>Decay Knowledgebase</title>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#home" aria-label="Decay home"><span class="mark">D</span><span>Decay</span><small>Knowledgebase</small></a>
+  <nav aria-label="Primary"><a href="#learn">Learn</a><a href="#game">Make a Game</a><a href="#cookbook">Cookbook</a><a href="#reference">Reference</a><a href="#concepts">Concepts</a></nav>
+  <button class="search-trigger" id="searchTrigger" aria-label="Search documentation"><span>Search</span><kbd>/</kbd></button>
+</header>
+
+<main>
+<section class="hero" id="home">
+  <div class="eyebrow">Sindri's gameplay language</div>
+  <h1>Build game logic.<br><span>Keep Rust underneath.</span></h1>
+  <p class="lede">Decay is a Rust-inspired, statically typed language made for gameplay. Learn it by building, look up exact syntax when you need it, and get back to your game.</p>
+  <div class="actions"><a class="button primary" href="#first-script">Write your first script</a><a class="button" href="#reference">Browse reference</a></div>
+  <div class="code-window" aria-label="Decay example">
+    <div class="code-head"><span>player.decay</span><button data-copy="heroCode">Copy</button></div>
+    <pre id="heroCode"><code><span class="kw">script</span> <span class="type">Player</span> {
+    <span class="attr">@export</span>
+    <span class="kw">var</span> speed: <span class="type">f32</span> = <span class="num">220.0</span>;
+
+    <span class="kw">fn</span> update(dt: <span class="type">f32</span>) {
+        <span class="kw">let</span> direction = Input.axis(<span class="str">"move_left"</span>, <span class="str">"move_right"</span>);
+        this.transform.position.x += direction * speed * dt;
+    }
+}</code></pre>
+  </div>
+</section>
+
+<section class="path-section" id="learn">
+  <div class="section-heading"><div><span class="kicker">Start here</span><h2>Learn by making things happen.</h2></div><p>Short lessons introduce language features when a game actually needs them. Revolutionary concept, apparently.</p></div>
+  <div class="lesson-grid">
+    <a class="lesson featured" href="#first-script"><span class="lesson-no">01</span><div><h3>Your first script</h3><p>Attach behaviour, expose a value, and understand the update loop.</p></div><span class="arrow">→</span></a>
+    <article class="lesson"><span class="lesson-no">02</span><div><h3>Variables & types</h3><p>Values, mutability, primitives and vectors.</p></div></article>
+    <article class="lesson"><span class="lesson-no">03</span><div><h3>Functions</h3><p>Turn behaviour into readable, reusable pieces.</p></div></article>
+    <article class="lesson"><span class="lesson-no">04</span><div><h3>Entities & scripts</h3><p>Understand where gameplay behaviour lives.</p></div></article>
+    <article class="lesson"><span class="lesson-no">05</span><div><h3>Communication</h3><p>Typed script messages, events and shared state.</p></div></article>
+    <article class="lesson"><span class="lesson-no">06</span><div><h3>Put it together</h3><p>Build a small playable system from the pieces.</p></div></article>
+  </div>
+</section>
+
+<section class="article-shell" id="first-script">
+  <aside><span class="aside-title">Learn Decay</span><a class="active" href="#first-script">1. Your first script</a><span>2. Variables & types</span><span>3. Functions</span><span>4. Control flow</span><span>5. Vectors</span><span>6. Entities & scripts</span><span>7. Communication</span><span>8. Events</span><span>9. Shared state</span></aside>
+  <article class="doc">
+    <div class="crumb">Learn Decay <span>/</span> Getting started</div>
+    <h2>Your first Decay script</h2>
+    <p class="intro">A Decay script adds gameplay behaviour to an entity. Start with the smallest useful thing: a value you can tune in Sindri and code that runs every frame.</p>
+    <div class="callout"><strong>What you'll learn</strong><p>Scripts, exported fields, typed values, functions, <code>update</code>, and why <code>dt</code> exists.</p></div>
+    <h3>Declare a script</h3>
+    <pre><code><span class="kw">script</span> <span class="type">Player</span> {
+    <span class="attr">@export</span>
+    <span class="kw">var</span> speed: <span class="type">f32</span> = <span class="num">220.0</span>;
+}</code></pre>
+    <p><code>script Player</code> declares a gameplay script type. <code>@export</code> makes <code>speed</code> editable from Sindri instead of burying tuning values in source.</p>
+    <h3>Run behaviour every frame</h3>
+    <pre><code><span class="kw">fn</span> update(dt: <span class="type">f32</span>) {
+    <span class="kw">let</span> direction = Input.axis(<span class="str">"move_left"</span>, <span class="str">"move_right"</span>);
+    this.transform.position.x += direction * speed * dt;
+}</code></pre>
+    <p>The engine calls <code>update</code> while the script is active. Multiplying movement by <code>dt</code> makes speed depend on time rather than frame rate.</p>
+    <div class="next"><span>Next lesson</span><strong>Variables & types →</strong></div>
+  </article>
+</section>
+
+<section class="cards-section" id="game">
+  <div class="section-heading"><div><span class="kicker">Guided project</span><h2>Make a complete game.</h2></div><p>One project from empty scene to exported build. No mysterious starter project quietly doing half the work.</p></div>
+  <div class="big-card"><div><span class="badge">Coming next</span><h3>Build a tiny arena game</h3><p>Movement, enemies, collisions, health, score, events, shared state, audio, Weave UI and export, introduced because the game needs them.</p></div><div class="progress"><span>15 chapters</span><div><i style="width:13%"></i></div><small>Knowledgebase foundation in progress</small></div></div>
+</section>
+
+<section class="cards-section" id="cookbook">
+  <div class="section-heading"><div><span class="kicker">Cookbook</span><h2>How do I…?</h2></div><p>Answers for when you already know enough Decay and simply need the thing on screen to behave.</p></div>
+  <div class="recipe-grid"><article><span>Movement</span><h3>Move an entity</h3><p>Read input and apply frame-rate-independent movement.</p></article><article><span>Communication</span><h3>Talk to another script</h3><p>Use typed script references instead of property-name strings.</p></article><article><span>Architecture</span><h3>Keep game-wide score</h3><p>Choose shared state when data belongs to the game rather than one entity.</p></article></div>
+</section>
+
+<section class="reference-section" id="reference">
+  <div class="section-heading"><div><span class="kicker">Reference</span><h2>Exact answers, quickly.</h2></div><p>Language truth comes from Decay. Sindri host API truth comes from Sindri. This site presents it instead of inventing a third version.</p></div>
+  <div class="ref-columns"><div><h3>Language</h3><a href="#ref-script"><code>script</code><span>Gameplay script declaration</span></a><a href="#reference"><code>state</code><span>Typed shared project state</span></a><a href="#reference"><code>event</code><span>Project-wide typed events</span></a><a href="#reference"><code>Vec2</code><span>Two-dimensional vector value</span></a></div><div><h3>Sindri API</h3><a href="#reference"><code>Input</code><span>Actions, axes and player input</span></a><a href="#reference"><code>World</code><span>Entities, spawning and queries</span></a><a href="#reference"><code>Physics</code><span>Movement, impulses and collisions</span></a><a href="#reference"><code>Audio</code><span>Sound playback and control</span></a></div></div>
+</section>
+
+<section class="concept-section" id="concepts">
+  <span class="kicker">Concepts</span><h2>Choose the right communication tool.</h2><div class="decision"><div><strong>One particular script?</strong><span>Typed script reference / message</span></div><b>→</b><div><strong>Announce something happened?</strong><span>Event</span></div><b>→</b><div><strong>Game-wide data?</strong><span>Shared state</span></div></div>
+</section>
+</main>
+
+<footer><div class="brand"><span class="mark">D</span><span>Decay</span></div><p>Built for Sindri Engine. Language and host implementation remain authoritative in <a href="https://github.com/vardirhq/sindri2">vardirhq/sindri2</a>.</p><a href="https://github.com/vardirhq/decay-knowledge">GitHub</a></footer>
+
+<dialog id="searchDialog"><form method="dialog" class="search-box"><div class="search-input"><span>⌕</span><input id="searchInput" autocomplete="off" placeholder="Search Decay…"><button aria-label="Close">Esc</button></div><div id="searchResults" class="search-results"></div></form></dialog>
+<script src="./assets/site.js"></script>
+</body>
+</html>
