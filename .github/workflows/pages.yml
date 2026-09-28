@@ -1,9 +1,18 @@
-name: Deploy Decay Knowledgebase
+name: Build and deploy Decay knowledgebase
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
+    inputs:
+      engine_ref:
+        description: Exact sindri-engine commit or ref (defaults to the pinned revision)
+        required: false
+  repository_dispatch:
+    types: [sindri-engine-updated]
+  schedule:
+    - cron: "17 4 * * *"
 
 permissions:
   contents: read
@@ -11,24 +20,60 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'pull_request' && format('docs-{0}', github.ref) || 'pages' }}
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Sindri revision
+        id: engine
+        env:
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          REQUESTED_REF: ${{ inputs.engine_ref }}
+        run: |
+          pinned="$(tr -d '[:space:]' < SINDRI_ENGINE_REVISION)"
+          if [ "$GITHUB_EVENT_NAME" = schedule ]; then pinned=main; fi
+          echo "ref=${DISPATCH_SHA:-${REQUESTED_REF:-$pinned}}" >> "$GITHUB_OUTPUT"
+      - name: Check out authoritative Sindri engine
+        uses: actions/checkout@v4
+        with:
+          repository: vardirhq/sindri-engine
+          ref: ${{ steps.engine.outputs.ref }}
+          path: _sindri-engine
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Verify authoritative API artifact is current
+        working-directory: _sindri-engine
+        # No --locked: sindri-engine does not commit a Cargo.lock, so there is
+        # no lock file to hold the build to. Its own CI resolves the same way.
+        run: cargo run -p sindri-capabilities
+      - name: Validate authored Decay examples
+        run: python scripts/validate_examples.py --engine-dir _sindri-engine
+      - name: Build static site
+        run: python scripts/build.py --engine-dir _sindri-engine
+      - name: Check routes, links, search, and provenance
+        run: python scripts/check_site.py _site
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - name: Deploy
+      - name: Deploy validated site
         id: deployment
         uses: actions/deploy-pages@v4

@@ -5,10 +5,10 @@
 - [x] Public GitHub Pages shell and `decay.vardir.no` CNAME
 - [x] Define teaching/reference/cookbook/concept/diagnostic boundaries
 - [x] Identify authoritative upstream host API export
-- [ ] Add automated upstream reference import
-- [ ] Record the exact `sindri-engine` revision used by each site build
-- [ ] Generate searchable API reference data from `decay-api.json`
-- [ ] Validate internal links and site structure in CI
+- [x] Add automated upstream reference import
+- [x] Record the exact `sindri-engine` revision used by each site build
+- [x] Generate searchable API reference data from `decay-api.json`
+- [x] Validate internal links and site structure in CI
 
 ## Milestone 2 — Learn Decay
 
@@ -23,15 +23,15 @@
 - [ ] Shared state
 - [ ] Collections and timers
 - [ ] Putting it together
-- [ ] Check all published Decay examples in CI
+- [x] Check all published Decay examples in CI
 
 ## Milestone 3 — practical knowledge
 
 - [ ] Initial cookbook set
 - [ ] Core concept pages
-- [ ] Full generated Sindri API browser
+- [x] Full generated Sindri API browser
 - [ ] Full language reference navigation
-- [ ] Search aliases/synonyms and symbol indexing
+- [x] Search aliases/synonyms and symbol indexing
 - [ ] Tooling/VS Code/`decay-lsp` guides
 
 ## Milestone 4 — diagnostics

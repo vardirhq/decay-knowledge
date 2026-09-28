@@ -1,129 +1,111 @@
 # Decay Knowledgebase
 
-The public learning and reference site for **Decay**, Sindri Engine's Rust-inspired, statically typed gameplay language.
+The static documentation published at **https://decay.vardir.no**. The design
+rule is **TEACH HERE, DEFINE THERE**: this repository owns authored learning,
+concept, cookbook, and diagnostic explanations; [`vardirhq/sindri-engine`](https://github.com/vardirhq/sindri-engine)
+owns executable language and host-API truth.
 
-This repository owns the **knowledge experience**: tutorials, cookbook recipes, concepts, diagnostics explanations, search, and the website itself.
+## Architecture
 
-It does **not** own the Decay language implementation or Sindri host API. Those remain authoritative in [`vardirhq/sindri-engine`](https://github.com/vardirhq/sindri-engine):
+`scripts/build.py` reads Sindri's generated `docs/generated/decay-api.json`,
+discovers every global, function, type, namespace-like host value, member, and
+`this` member, and emits static routes under `_site/reference/api/`. The
+authoritative `decay/LANGUAGE.md` is rendered at `/reference/language/` without
+trying to infer a second symbol model from its prose. The build also
+builds `search-index.json`, `sitemap.xml`, canonical metadata, a 404 page, and
+`build-metadata.json`. Every page and metadata artifact records the exact
+engine Git SHA. `_site` is intentionally uncommitted: the two source revisions
+reproduce it.
 
-- `decay/LANGUAGE.md` — implemented Decay language behaviour
-- `docs/scripting.md` — Sindri host contract
-- `docs/generated/decay-api.md` / `decay-api.json` — generated host API reference
-- `docs/decay-direction.md` — language/product direction
+The JSON is generated in Sindri from the host surface shared by analyzer and
+runtime (`cargo run -p sindri-capabilities -- --write`). This repository does
+not parse `docs/scripting.md` or guess descriptions from prose. Parameter names
+and structured descriptions are not in schema version 1; those should be added
+to the canonical Sindri host declarations/generator before this site displays
+them. `decay/LANGUAGE.md` likewise remains the current human-readable language
+authority. Compiler structures do contain tokens/types, but Sindri does not yet
+export a stable language metadata schema, so this site deliberately does not
+regex-scrape that document. The desired upstream schema is described in
+`docs/upstream.md` so it can later replace prose-only language indexing.
 
-The long-term rule is simple: **teach here, define there**. Reference data should be generated or synchronized from authoritative Sindri/Decay definitions rather than manually duplicated until it drifts.
+Decay diagnostics do not yet have consistently preserved stable codes across
+parser, semantic analyzer, `decay-lsp`, and JSON preflight. The gap is tracked
+in Sindri's `docs/decay-lsp-modernization.md`; this site will not invent web-only
+IDs.
 
-## Knowledgebase structure
+## Local build
 
-The intended public information architecture is:
+Read both repositories' `AGENTS.md`/`CLAUDE.md` first, then:
 
-```text
-Start Here
-├── What is Decay?
-├── Your first script
-└── Decay in 10 minutes
-
-Learn Decay
-├── Scripts
-├── Variables and types
-├── Functions
-├── Control flow
-├── Vectors
-├── Entities and scripts
-├── Script communication
-├── Events
-├── Shared state
-├── Collections
-└── Putting it together
-
-Make a Game
-└── A complete guided Sindri project
-
-Cookbook
-├── Movement
-├── Input
-├── Physics
-├── Animation
-├── Audio
-├── Spawning
-├── UI
-├── State
-└── Common gameplay patterns
-
-Language Reference
-Sindri API Reference
-Concepts
-Diagnostics
-Tools
-Decay Internals
+```sh
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+python scripts/validate_examples.py --engine-dir ../sindri-engine
+python scripts/build.py --engine-dir ../sindri-engine
+python scripts/check_site.py _site
+python -m http.server --directory _site 8000
 ```
 
-The site should serve three jobs without muddling them together:
+Use the SHA in `SINDRI_ENGINE_REVISION` to reproduce the default CI build. A
+dispatch may intentionally build another exact revision; its SHA is captured
+in the output rather than changing the pin.
 
-1. **Teach** — progressive material explaining why concepts exist and when to use them.
-2. **Help accomplish tasks** — short recipes answering practical "How do I...?" questions.
-3. **State exact truth** — language/API reference generated from or checked against the implementation.
+## Authored content
 
-## Source-of-truth boundary
+Put Markdown at `content/<section>/<slug>.md` with this simple front matter:
 
-`vardirhq/sindri-engine` remains authoritative for:
+```yaml
+---
+title: Human title
+description: Search and page description.
+aliases: controller, gamepad, input
+---
+```
 
-- grammar and semantics;
-- types and built-ins;
-- diagnostic behaviour;
-- Sindri host namespaces, members, and signatures;
-- runtime/editor integration.
+Aliases feed client-side search. Mark every Decay fence explicitly:
 
-`decay-knowledge` owns:
+````markdown
+```decay compile
+script Example { fn update(dt: f32) {} }
+```
 
-- teaching prose;
-- tutorials and exercises;
-- cookbook recipes;
-- concept explanations;
-- diagnostic explanations;
-- search metadata and synonyms;
-- site design and navigation;
-- generated presentation of upstream reference data.
+```decay fail
+this is deliberately invalid
+```
+````
 
-The same signature should never be maintained independently in the compiler, LSP, generated API docs, and this website if it can instead flow from one canonical description.
+The validator runs each fence through the current engine's typed
+`decay-lsp --check`. A `diagnostic=CODE` fence annotation is supported once an
+upstream stable code is available. Never copy generated signatures into
+teaching prose; link to the generated symbol route.
 
-## Quality rules
+## GitHub automation and one-time setup
 
-A mature Decay knowledgebase should enforce these rules:
+The Pages workflow runs for knowledgebase pushes/PRs, manual dispatches,
+cross-repository `repository_dispatch`, and a nightly recovery schedule. It
+checks out the requested engine revision, verifies Sindri's generated API is
+current, validates examples, builds, checks links/search/provenance, then
+deploys only after validation succeeds. GitHub Pages must be configured to use
+**GitHub Actions**; DNS and the existing `CNAME` must continue pointing
+`decay.vardir.no` at Pages.
 
-- Valid Decay examples are compiled in CI where practical.
-- Deliberately-invalid examples are marked and checked as failures where practical.
-- Tutorial checkpoint projects are validated against the Sindri version they teach.
-- Generated API/reference material comes from Sindri/Decay's authoritative data.
-- Search supports conceptual synonyms such as `global variable` → shared `state` and `controller` → gamepad/input docs.
-- Teaching, cookbook, concepts, and reference link to each other instead of duplicating explanations.
-- Pages clearly state whether they teach **Decay the language** or **Sindri's Decay host API**.
+For immediate engine-driven updates, add a Sindri workflow that sends event
+`sindri-engine-updated` after relevant changes reach `main`, with payload
+`{"sha":"${GITHUB_SHA}"}`. Cross-repository dispatch requires a fine-grained
+PAT or GitHub App token with Actions/content access to `decay-knowledge`, stored
+in Sindri as `DECAY_KNOWLEDGE_TOKEN`. GitHub's default `GITHUB_TOKEN` cannot
+dispatch to another repository. The nightly run is the no-token safety net and
+builds current `sindri-engine/main`; ordinary builds use the reproducible pin.
+Update `SINDRI_ENGINE_REVISION` when adopting a new default revision. A dispatch
+SHA makes updates immediate while retaining exact provenance.
 
-## Planned site
+## Generated versus authored
 
-The initial design direction is a clean documentation application with:
+- **Generated:** host API pages and symbol indexes, search records for symbols,
+  sitemap, build/source metadata.
+- **Authored:** learning paths, tutorials, cookbook guidance, concepts, and
+  future expanded diagnostic explanations.
 
-- a focused landing page;
-- persistent top navigation for Learn / Make a Game / Cookbook / Reference / Concepts;
-- section sidebars for long-form material;
-- excellent full-site search;
-- copyable, syntax-highlighted Decay examples;
-- related-content panels;
-- dedicated compiler-diagnostic pages;
-- responsive desktop/mobile layouts;
-- future hooks for editor/LSP deep links and machine-readable knowledge access.
-
-## Development status
-
-This repository is being bootstrapped. The first milestone is to establish the site shell, content model, upstream Sindri/Decay synchronization strategy, and a small high-quality vertical slice covering:
-
-- landing page;
-- first-script tutorial;
-- one language reference page;
-- one Sindri API reference page;
-- one cookbook recipe;
-- one concept page;
-- one diagnostic page;
-- unified search across those content types.
-
-That slice should prove the information architecture before hundreds of pages are enthusiastically generated and left for future archaeologists.
+Future work includes a canonical structured language export, stable upstream
+diagnostic IDs, richer upstream descriptions, and tutorial project validation.
