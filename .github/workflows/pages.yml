@@ -51,7 +51,9 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Verify authoritative API artifact is current
         working-directory: _sindri-engine
-        run: cargo run --locked -p sindri-capabilities
+        # No --locked: sindri-engine does not commit a Cargo.lock, so there is
+        # no lock file to hold the build to. Its own CI resolves the same way.
+        run: cargo run -p sindri-capabilities
       - name: Validate authored Decay examples
         run: python scripts/validate_examples.py --engine-dir _sindri-engine
       - name: Build static site
