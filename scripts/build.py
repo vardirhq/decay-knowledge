@@ -21,10 +21,19 @@ def slug(value: str) -> str:
     return quote(value, safe="-._~")
 
 
+def inline(text: str) -> str:
+    """Escape upstream prose, rendering its `code` spans."""
+    return re.sub(r"`([^`]+)`", r"<code>\1</code>", esc(text))
+
+
 def signature(item: dict, owner: str | None = None) -> str:
     name = f"{owner}.{item['name']}" if owner else item["name"]
     if item["kind"] == "function":
-        params = ", ".join(item.get("parameters", []))
+        types = item.get("parameters", [])
+        names = item.get("parameter_names") or []
+        params = ", ".join(
+            f"{names[i]}: {ty}" if i < len(names) else ty for i, ty in enumerate(types)
+        )
         return f"{name}({params}) -> {item.get('returns', 'unit')}"
     return f"{name}: {item.get('type', 'unknown')}"
 
@@ -92,14 +101,26 @@ def main() -> None:
         )
 
     types = {t["name"]: t for t in api["types"]}
+
+    def describe(item: dict) -> str:
+        """The upstream description, when the engine provides one."""
+        text = item.get("description")
+        return f'<p class="lead">{inline(text)}</p>' if text else ""
+
+    def provenance(api: dict, sha: str) -> str:
+        """Engine version and a short, linked commit that cannot overflow."""
+        return (
+            f'<dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd>'
+            f'<dt>Source commit</dt><dd><a href="https://github.com/vardirhq/sindri-engine/commit/{esc(sha)}" title="{esc(sha)}"><code>{esc(sha[:12])}</code></a></dd>'
+        )
     cards = []
     for item in api["globals"]:
         route = f"/reference/api/globals/{slug(item['name'])}/"
         sig = signature(item)
-        body = f'<p class="eyebrow">Global {esc(item["kind"])}</p><h1>{esc(item["name"])}</h1><pre><code>{esc(sig)}</code></pre><dl><dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd><dt>Source commit</dt><dd><code>{esc(sha)}</code></dd></dl>'
-        write(out, route, page(item["name"], body, route, sha))
+        body = f'<p class="eyebrow">Global {esc(item["kind"])}</p><h1>{esc(item["name"])}</h1>{describe(item)}<pre><code>{esc(sig)}</code></pre><dl>{provenance(api, sha)}</dl>'
+        write(out, route, page(item["name"], body, route, sha, item.get("description") or "Decay documentation"))
         routes.append(route)
-        add(item["name"], f"Global {item['kind']}", sig, route)
+        add(item["name"], f"Global {item['kind']}", " ".join(filter(None, [sig, item.get("description")])), route)
     for owner, members in [(t["name"], t["members"]) for t in api["types"]] + [
         ("this", api["this"])
     ]:
@@ -118,26 +139,52 @@ def main() -> None:
                         f'<a href="/reference/api/{slug(typ)}/">{esc(typ)}</a>'
                     )
             body = (
-                f'<p class="eyebrow">{esc(owner)} · {esc(item["kind"])}</p><h1>{esc(owner)}.<wbr>{esc(item["name"])}</h1><pre><code>{esc(sig)}</code></pre><dl><dt>Owner</dt><dd><a href="{owner_route}">{esc(owner)}</a></dd><dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd><dt>Source commit</dt><dd><code>{esc(sha)}</code></dd></dl>'
+                f'<p class="eyebrow">{esc(owner)} · {esc(item["kind"])}</p><h1>{esc(owner)}.<wbr>{esc(item["name"])}</h1>{describe(item)}<pre><code>{esc(sig)}</code></pre><dl><dt>Owner</dt><dd><a href="{owner_route}">{esc(owner)}</a></dd>{provenance(api, sha)}</dl>'
                 + (
                     f'<h2>Related types</h2><p>{" · ".join(related)}</p>'
                     if related
                     else ""
                 )
             )
-            write(out, route, page(f"{owner}.{item['name']}", body, route, sha))
+            write(
+                out,
+                route,
+                page(
+                    f"{owner}.{item['name']}",
+                    body,
+                    route,
+                    sha,
+                    item.get("description") or "Decay documentation",
+                ),
+            )
             routes.append(route)
-            links.append(f'<li><a href="{route}"><code>{esc(sig)}</code></a></li>')
-            add(f"{owner}.{item['name']}", item["kind"], sig, route)
+            summary = (
+                f'<span class="summary">{inline(item["description"])}</span>'
+                if item.get("description")
+                else ""
+            )
+            links.append(
+                f'<li><a href="{route}"><code>{esc(sig)}</code></a>{summary}</li>'
+            )
+            add(f"{owner}.{item['name']}", item["kind"], " ".join(filter(None, [sig, item.get("description")])), route)
         kind = "this members" if owner == "this" else "Host type"
-        body = f'<p class="eyebrow">{kind}</p><h1>{esc(owner)}</h1><p>{len(members)} exported members in engine {esc(api["engine_version"])}.</p><ul class="symbol-list">{"".join(links)}</ul>'
+        owner_text = (
+            "What a script can reach on the object it is attached to, beyond its own fields."
+            if owner == "this"
+            else types.get(owner, {}).get("description")
+        )
+        body = f'<p class="eyebrow">{kind}</p><h1>{esc(owner)}</h1>{describe({"description": owner_text})}<p>{len(members)} exported members in engine {esc(api["engine_version"])}.</p><ul class="symbol-list">{"".join(links)}</ul>'
         generated_aliases = {
             "Input": "controller gamepad input",
             "Gamepad": "controller input",
             "World": "spawn object spawning",
             "Time": "delta time dt update",
         }
-        write(out, owner_route, page(owner, body, owner_route, sha))
+        write(
+            out,
+            owner_route,
+            page(owner, body, owner_route, sha, owner_text or "Decay documentation"),
+        )
         routes.append(owner_route)
         add(
             owner,
@@ -154,7 +201,7 @@ def main() -> None:
         f'<li><a href="/reference/api/globals/{slug(x["name"])}/">{esc(signature(x))}</a></li>'
         for x in api["globals"]
     )
-    body = f'<p class="eyebrow">Generated reference</p><h1>Sindri Decay API</h1><p>Executable truth from engine <strong>{esc(api["engine_version"])}</strong> at <code>{esc(sha)}</code>. This index is generated; do not edit signatures here.</p><h2>Host types and namespaces</h2><ul class="symbol-list">{"".join(cards)}</ul><h2>Globals</h2><ul class="symbol-list">{globals_links}</ul>'
+    body = f'<p class="eyebrow">Generated reference</p><h1>Sindri Decay API</h1><p>Executable truth from engine <strong>{esc(api["engine_version"])}</strong> at <a href="https://github.com/vardirhq/sindri-engine/commit/{esc(sha)}" title="{esc(sha)}"><code>{esc(sha[:12])}</code></a>. This index is generated; do not edit signatures here.</p><h2>Host types and namespaces</h2><ul class="symbol-list">{"".join(cards)}</ul><h2>Globals</h2><ul class="symbol-list">{globals_links}</ul>'
     write(out, api_route, page("Sindri API", body, api_route, sha))
     routes.append(api_route)
     add("Sindri API", "Reference", "host namespaces types globals functions", api_route)
