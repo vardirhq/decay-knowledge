@@ -92,14 +92,26 @@ def main() -> None:
         )
 
     types = {t["name"]: t for t in api["types"]}
+
+    def describe(item: dict) -> str:
+        """The upstream description, when the engine provides one."""
+        text = item.get("description")
+        return f'<p class="lead">{esc(text)}</p>' if text else ""
+
+    def provenance(api: dict, sha: str) -> str:
+        """Engine version and a short, linked commit that cannot overflow."""
+        return (
+            f'<dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd>'
+            f'<dt>Source commit</dt><dd><a href="https://github.com/vardirhq/sindri-engine/commit/{esc(sha)}" title="{esc(sha)}"><code>{esc(sha[:12])}</code></a></dd>'
+        )
     cards = []
     for item in api["globals"]:
         route = f"/reference/api/globals/{slug(item['name'])}/"
         sig = signature(item)
-        body = f'<p class="eyebrow">Global {esc(item["kind"])}</p><h1>{esc(item["name"])}</h1><pre><code>{esc(sig)}</code></pre><dl><dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd><dt>Source commit</dt><dd><code>{esc(sha)}</code></dd></dl>'
+        body = f'<p class="eyebrow">Global {esc(item["kind"])}</p><h1>{esc(item["name"])}</h1>{describe(item)}<pre><code>{esc(sig)}</code></pre><dl>{provenance(api, sha)}</dl>'
         write(out, route, page(item["name"], body, route, sha))
         routes.append(route)
-        add(item["name"], f"Global {item['kind']}", sig, route)
+        add(item["name"], f"Global {item['kind']}", " ".join(filter(None, [sig, item.get("description")])), route)
     for owner, members in [(t["name"], t["members"]) for t in api["types"]] + [
         ("this", api["this"])
     ]:
@@ -118,7 +130,7 @@ def main() -> None:
                         f'<a href="/reference/api/{slug(typ)}/">{esc(typ)}</a>'
                     )
             body = (
-                f'<p class="eyebrow">{esc(owner)} · {esc(item["kind"])}</p><h1>{esc(owner)}.<wbr>{esc(item["name"])}</h1><pre><code>{esc(sig)}</code></pre><dl><dt>Owner</dt><dd><a href="{owner_route}">{esc(owner)}</a></dd><dt>Engine version</dt><dd>{esc(api["engine_version"])}</dd><dt>Source commit</dt><dd><code>{esc(sha)}</code></dd></dl>'
+                f'<p class="eyebrow">{esc(owner)} · {esc(item["kind"])}</p><h1>{esc(owner)}.<wbr>{esc(item["name"])}</h1>{describe(item)}<pre><code>{esc(sig)}</code></pre><dl><dt>Owner</dt><dd><a href="{owner_route}">{esc(owner)}</a></dd>{provenance(api, sha)}</dl>'
                 + (
                     f'<h2>Related types</h2><p>{" · ".join(related)}</p>'
                     if related
@@ -128,7 +140,7 @@ def main() -> None:
             write(out, route, page(f"{owner}.{item['name']}", body, route, sha))
             routes.append(route)
             links.append(f'<li><a href="{route}"><code>{esc(sig)}</code></a></li>')
-            add(f"{owner}.{item['name']}", item["kind"], sig, route)
+            add(f"{owner}.{item['name']}", item["kind"], " ".join(filter(None, [sig, item.get("description")])), route)
         kind = "this members" if owner == "this" else "Host type"
         body = f'<p class="eyebrow">{kind}</p><h1>{esc(owner)}</h1><p>{len(members)} exported members in engine {esc(api["engine_version"])}.</p><ul class="symbol-list">{"".join(links)}</ul>'
         generated_aliases = {
