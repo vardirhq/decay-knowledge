@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       engine_ref:
-        description: Exact sindri-engine commit or ref (defaults to the pinned revision)
+        description: Exact sindri-engine commit or ref (defaults to the latest main)
         required: false
   repository_dispatch:
     types: [sindri-engine-updated]
@@ -33,10 +33,10 @@ jobs:
         env:
           DISPATCH_SHA: ${{ github.event.client_payload.sha }}
           REQUESTED_REF: ${{ inputs.engine_ref }}
-        run: |
-          pinned="$(tr -d '[:space:]' < SINDRI_ENGINE_REVISION)"
-          if [ "$GITHUB_EVENT_NAME" = schedule ]; then pinned=main; fi
-          echo "ref=${DISPATCH_SHA:-${REQUESTED_REF:-$pinned}}" >> "$GITHUB_OUTPUT"
+        # The latest engine unless a commit is asked for. Which commit was
+        # built is recorded in the site from the checkout itself, so a build
+        # of `main` is still exactly reproducible.
+        run: echo "ref=${DISPATCH_SHA:-${REQUESTED_REF:-main}}" >> "$GITHUB_OUTPUT"
       - name: Check out authoritative Sindri engine
         uses: actions/checkout@v4
         with:

@@ -37,4 +37,4 @@ Generated reference pages get their symbol/signature metadata from the upstream 
 
 ## Validation target
 
-The knowledgebase is trustworthy only when examples and generated reference data are validated against a pinned `sindri-engine` revision in CI. A future language/API change that invalidates published material should break knowledgebase validation rather than silently ship stale documentation.
+The knowledgebase is trustworthy only when examples and generated reference data are validated against the `sindri-engine` revision each CI build resolves (latest `main` unless one is named). A future language/API change that invalidates published material should break knowledgebase validation rather than silently ship stale documentation.
