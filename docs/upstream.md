@@ -16,9 +16,8 @@ From `vardirhq/sindri-engine`:
 
 ## Implemented synchronization
 
-The site consumes a pinned or explicitly dispatched upstream revision during
-CI. Scheduled recovery builds resolve current `sindri-engine/main`; every build
-records the resolved commit, so reference generation and example validation
+The site builds the latest `sindri-engine/main` during CI, unless a manual run
+or a dispatch names an exact revision; every build records the resolved commit, so reference generation and example validation
 always use the same checkout.
 
 ```text

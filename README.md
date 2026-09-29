@@ -47,9 +47,9 @@ python scripts/check_site.py _site
 python -m http.server --directory _site 8000
 ```
 
-Use the SHA in `SINDRI_ENGINE_REVISION` to reproduce the default CI build. A
-dispatch may intentionally build another exact revision; its SHA is captured
-in the output rather than changing the pin.
+CI builds the latest `sindri-engine/main` unless a commit is asked for. The
+commit a build used is recorded in `_site/build-metadata.json`; pass it as
+`engine_ref` to rebuild that exact site.
 
 ## Authored content
 
@@ -96,9 +96,9 @@ For immediate engine-driven updates, add a Sindri workflow that sends event
 PAT or GitHub App token with Actions/content access to `decay-knowledge`, stored
 in Sindri as `DECAY_KNOWLEDGE_TOKEN`. GitHub's default `GITHUB_TOKEN` cannot
 dispatch to another repository. The nightly run is the no-token safety net and
-builds current `sindri-engine/main`; ordinary builds use the reproducible pin.
-Update `SINDRI_ENGINE_REVISION` when adopting a new default revision. A dispatch
-SHA makes updates immediate while retaining exact provenance.
+builds current `sindri-engine/main`, as every build does unless a manual run
+names an `engine_ref` or a dispatch carries a SHA. A dispatch makes updates
+immediate; the resolved commit is recorded either way.
 
 ## Generated versus authored
 
